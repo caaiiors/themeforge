@@ -137,7 +137,7 @@ body[data-motion="on"] .card.hover:hover { transform: translateY(-2px); box-shad
 .hero { position: relative; padding: 26px; margin: 18px 0 22px; }
 .hero h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: .3px; }
 .hero p { margin: 0 0 12px; color: var(--muted); }
-.cta { display: flex; gap: 10px; }
+.cta { display: flex; gap: 10px; color: white;}
 .hero__orb { position: absolute; right: -120px; top: -120px; width: 300px; height: 300px; border-radius: 50%; filter: blur(40px); opacity: .55; background: radial-gradient(circle at 30% 30%, var(--glow) 0%, transparent 60%); z-index: -1; }
 
 .grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; }
