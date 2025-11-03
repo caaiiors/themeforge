@@ -49,16 +49,29 @@
   }
 
   function setControlsFromState(s) {
-    els.hue.value = s.hue; els.hueVal.textContent = s.hue;
-    els.sat.value = s.sat; els.satVal.textContent = s.sat;
-    els.glow.value = s.glow; els.glowVal.textContent = s.glow;
-    els.accent.value = s.accentShift; els.accentVal.textContent = s.accentShift;
-    els.grain.checked = s.grain;
-    els.motion.checked = s.motion;
-    els.radius.value = s.radius; els.radiusVal.textContent = s.radius;
-    els.contrast.value = s.contrast; els.contrastVal.textContent = s.contrast.toFixed(2);
-    (s.mode === 'light' ? els.modeLight : els.modeDark).checked = true;
-  }
+  els.hue.value = s.hue;
+  els.hueVal.textContent = `${s.hue}°`;
+
+  els.sat.value = s.sat;
+  els.satVal.textContent = `${s.sat}%`;
+
+  els.glow.value = s.glow;
+  els.glowVal.textContent = s.glow;
+
+  els.accent.value = s.accentShift;
+  els.accentVal.textContent = `${s.accentShift}°`;
+
+  els.radius.value = s.radius;
+  els.radiusVal.textContent = `${s.radius}px`;
+
+  els.contrast.value = s.contrast;
+  els.contrastVal.textContent = `${s.contrast.toFixed(2)}x`;
+
+  els.grain.checked = s.grain;
+  els.motion.checked = s.motion;
+  (s.mode === "light" ? els.modeLight : els.modeDark).checked = true;
+}
+
 
   function computeTheme(s) {
     const { hue: H, sat: S, accentShift, contrast, mode } = s;
@@ -112,149 +125,209 @@
     };
   }
 
-  function applyTheme(vars, s) {
+    function renderTheme(vars) {
     const root = document.documentElement;
     for (const [k, v] of Object.entries(vars)) root.style.setProperty(k, v);
-
-    document.body.dataset.mode = s.mode;
-    document.body.dataset.grain = s.grain ? 'on' : 'off';
-    document.body.dataset.motion = s.motion ? 'on' : 'off';
   }
 
-  function updateLabels() {
-    els.hueVal.textContent = els.hue.value;
-    els.satVal.textContent = els.sat.value;
-    els.glowVal.textContent = Number(els.glow.value).toFixed(2).replace(/\.00$/, '.0');
-    els.accentVal.textContent = els.accent.value;
-    els.radiusVal.textContent = els.radius.value;
-    els.contrastVal.textContent = Number(els.contrast.value).toFixed(2);
-  }
-
-  function serializeState(s) {
-    const params = new URLSearchParams({
-      h: s.hue, sa: s.sat, g: s.glow, as: s.accentShift, gr: s.grain ? 1 : 0, m: s.motion ? 1 : 0,
-      r: s.radius, c: s.contrast, md: s.mode === 'light' ? 'l' : 'd'
-    });
-    return params.toString();
-  }
-  function parseState() {
-    const q = new URLSearchParams(location.search);
-    const parseNum = (k, d, f = Number) => (q.has(k) ? f(q.get(k)) : d);
-    const md = q.get('md');
-    return {
-      hue: parseNum('h', Number(els.hue.value)),
-      sat: parseNum('sa', Number(els.sat.value)),
-      glow: parseNum('g', Number(els.glow.value)),
-      accentShift: parseNum('as', Number(els.accent.value)),
-      grain: parseNum('gr', 1) == 1,
-      motion: parseNum('m', 1) == 1,
-      radius: parseNum('r', Number(els.radius.value)),
-      contrast: parseNum('c', Number(els.contrast.value), Number),
-      mode: md === 'l' ? 'light' : 'dark',
-    };
-  }
-
-  function updateURL(s, replace = true) {
-    const qs = serializeState(s);
-    const url = `${location.pathname}?${qs}`;
-    if (replace) history.replaceState(null, '', url); else history.pushState(null, '', url);
-  }
-
-  function toCSS(vars) {
-    const lines = Object.entries(vars).map(([k, v]) => `  ${k}: ${v};`).join('\n');
-    const usage = `:root {\n${lines}\n}`;
-    const helpers = `\n\n/* Exemplo de uso */\n.button {\n  background: var(--primary);\n  color: var(--primary-contrast);\n  border-radius: var(--radius);\n  box-shadow: 0 0 calc(30px * var(--glow-i)) var(--glow);\n}\n.card {\n  background: var(--surface);\n  color: var(--text);\n  border: 1px solid color-mix(in oklab, var(--primary) 20%, var(--surface));\n  border-radius: var(--radius);\n}`;
-    return `/* Tema gerado pelo Gerador de Temas — Minimal Futurista */\n${usage}${helpers}\n`;
-  }
-
-  async function copy(text) {
-    try { await navigator.clipboard.writeText(text); return true; } catch { return false; }
-  }
-  function download(filename, text) {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([text], { type: 'text/css' }));
-    a.download = filename; a.click(); URL.revokeObjectURL(a.href);
-  }
-
-  function applyFromControls() {
-    updateLabels();
+  function update() {
     const s = stateFromControls();
     const vars = computeTheme(s);
-    applyTheme(vars, s);
-    updateURL(s, true);
+    renderTheme(vars);
+    saveState(s);
   }
 
-  // Presets
-  const PRESETS = {
-    neon:   { hue: 190, sat: 78, glow: .75, accentShift: 22, grain: true,  motion: true,  radius: 12, contrast: 1.03, mode: 'dark' },
-    cyber:  { hue: 208, sat: 80, glow: .70, accentShift: 30, grain: true,  motion: true,  radius: 12, contrast: 1.05, mode: 'dark' },
-    aurora: { hue: 150, sat: 70, glow: .65, accentShift: 18, grain: true,  motion: true,  radius: 14, contrast: 1.02, mode: 'dark' },
-    sunset: { hue: 12,  sat: 78, glow: .68, accentShift: 40, grain: false, motion: true,  radius: 16, contrast: 1.00, mode: 'light' },
-    royal:  { hue: 268, sat: 64, glow: .72, accentShift: 26, grain: true,  motion: true,  radius: 14, contrast: 1.06, mode: 'dark' },
-  };
+  function saveState(s) {
+    localStorage.setItem('themeforge-state', JSON.stringify(s));
+  }
+
+  function loadState() {
+    try {
+      const s = JSON.parse(localStorage.getItem('themeforge-state'));
+      if (!s) return null;
+      return s;
+    } catch { return null; }
+  }
 
   function randomize() {
-    const r = (min, max) => Math.random() * (max - min) + min;
     const s = {
-      hue: Math.round(r(0, 360)),
-      sat: Math.round(r(55, 88)),
-      glow: round(r(.45, .9), 2),
-      accentShift: Math.round(r(8, 60)),
-      grain: Math.random() > .3,
-      motion: Math.random() > .15,
-      radius: Math.round(r(6, 18)),
-      contrast: round(r(.92, 1.10), 2),
-      mode: Math.random() > .33 ? 'dark' : 'light',
+      hue: Math.round(Math.random() * 360),
+      sat: Math.round(40 + Math.random() * 50),
+      glow: round(Math.random(), 2),
+      accentShift: Math.round(Math.random() * 120),
+      grain: Math.random() > 0.3,
+      motion: Math.random() > 0.2,
+      radius: Math.round(Math.random() * 24),
+      contrast: round(0.85 + Math.random() * 0.3, 2),
+      mode: Math.random() > 0.5 ? 'dark' : 'light',
     };
     setControlsFromState(s);
-    applyFromControls();
+    update();
   }
 
-  // Event wiring
-  ['input', 'change'].forEach(evt => {
-    $$('.panel input').forEach(el => el.addEventListener(evt, applyFromControls));
-  });
-
-  els.randomize.addEventListener('click', () => randomize());
-
-  els.copyCss.addEventListener('click', async () => {
-    const vars = computeTheme(stateFromControls());
-    const css = toCSS(vars);
-    const ok = await copy(css);
-    feedback(els.copyCss, ok ? 'Copiado!' : 'Erro');
-  });
-
-  els.downloadCss.addEventListener('click', () => {
-    const vars = computeTheme(stateFromControls());
-    const css = toCSS(vars);
-    download('theme.css', css);
-  });
-
-  els.shareUrl.addEventListener('click', async () => {
+  function copyCss() {
     const s = stateFromControls();
-    updateURL(s, false);
-    const ok = await copy(location.href);
-    feedback(els.shareUrl, ok ? 'Link copiado' : 'URL atualizada');
-  });
-
-  $$('.chip[data-preset]').forEach(btn => btn.addEventListener('click', () => {
-    const p = PRESETS[btn.dataset.preset];
-    if (!p) return;
-    setControlsFromState(p);
-    applyFromControls();
-  }));
-
-  function feedback(button, text) {
-    const prev = button.textContent;
-    button.textContent = text;
-    button.disabled = true;
-    setTimeout(() => { button.textContent = prev; button.disabled = false; }, 1100);
+    const vars = computeTheme(s);
+    let css = ':root {\n';
+    for (const [k, v] of Object.entries(vars)) css += `  ${k}: ${v};\n`;
+    css += '}';
+    navigator.clipboard.writeText(css);
+    flash('✅ CSS copiado!');
   }
 
-  // Init
-  (function init() {
-    const s = parseState();
-    setControlsFromState(s);
-    applyFromControls();
-  })();
+  function downloadCss() {
+    const s = stateFromControls();
+    const vars = computeTheme(s);
+    let css = ':root {\n';
+    for (const [k, v] of Object.entries(vars)) css += `  ${k}: ${v};\n`;
+    css += '}\n';
+    const blob = new Blob([css], { type: 'text/css' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'themeforge.css';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function shareUrl() {
+    const s = stateFromControls();
+    const params = new URLSearchParams(s).toString();
+    const link = `${location.origin}${location.pathname}?${params}`;
+    navigator.clipboard.writeText(link);
+    flash('🔗 Link copiado!');
+  }
+
+  function flash(msg) {
+    const el = document.createElement('div');
+    el.className = 'flash';
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(() => el.classList.add('visible'), 10);
+    setTimeout(() => el.classList.remove('visible'), 2000);
+    setTimeout(() => el.remove(), 2600);
+  }
+
+  // Listeners
+  Object.values(els).forEach(el => {
+    if (el && el.tagName === 'INPUT') el.addEventListener('input', update);
+  });
+
+  els.randomize.addEventListener('click', randomize);
+  els.copyCss.addEventListener('click', copyCss);
+  els.downloadCss.addEventListener('click', downloadCss);
+  els.shareUrl.addEventListener('click', shareUrl);
+
+  // Presets
+  $$('.chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const p = btn.dataset.preset;
+      const presets = {
+        neon:   { hue: 180, sat: 80, glow: .7, accentShift: 40, mode: 'dark', grain: true, motion: true, radius: 12, contrast: 1.05 },
+        cyber:  { hue: 210, sat: 86, glow: .9, accentShift: 30, mode: 'dark', grain: true, motion: true, radius: 16, contrast: 1.1 },
+        aurora: { hue: 135, sat: 60, glow: .6, accentShift: 55, mode: 'dark', grain: true, motion: true, radius: 14, contrast: 1.0 },
+        sunset: { hue: 18, sat: 78, glow: .5, accentShift: 90, mode: 'light', grain: true, motion: true, radius: 10, contrast: .96 },
+        royal:  { hue: 260, sat: 65, glow: .8, accentShift: 60, mode: 'dark', grain: true, motion: true, radius: 18, contrast: 1.1 },
+      };
+      const s = presets[p];
+      setControlsFromState(s);
+      update();
+      flash(`🎨 ${btn.textContent} aplicado!`);
+    });
+  });
+
+  // Inicialização
+  const loaded = loadState();
+  if (loaded) setControlsFromState(loaded);
+  update();
 })();
+
+(() => {
+  const langToggle = document.getElementById("langToggle");
+  if (!langToggle) return;
+
+  const translations = {
+    pt: {
+      title: "Gerador de Temas",
+      subtitle: "Minimal + toques futuristas (glow, animações)",
+      baseColors: "Cores Base",
+      hueLabel: "Matiz (Hue)",
+      saturationLabel: "Saturação",
+      modeLabel: "Modo",
+      dark: "Escuro",
+      light: "Claro",
+      futuristicTouch: "Toque Futurista",
+      glowIntensity: "Intensidade do Glow",
+      accentOffset: "Offset de Acento",
+      grainLabel: "Grid/Grain",
+      motionLabel: "Animações",
+      uiLabel: "UI",
+      radiusLabel: "Arredondamento",
+      contrastLabel: "Contraste",
+      presets: "Presets",
+      export: "Exportar",
+      randomize: "Randomizar",
+      copy: "Copiar CSS",
+      download: "Baixar CSS",
+      share: "Compartilhar",
+      hint: "Dica: cole o CSS no seu portfólio e use as variáveis.",
+      about: "Sobre",
+      projects: "Projetos",
+      contact: "Contato",
+      heroName: "Seu Nome",
+      heroDesc: "Desenvolvedor Frontend • UI minimalista com um toque sci-fi.",
+      viewProjects: "Ver Projetos",
+      contactBtn: "Contato",
+      footer: "© 2025 Caio Rissa Silveira — Todos os direitos reservados",
+    },
+    en: {
+      title: "Theme Generator",
+      subtitle: "Minimal + futuristic touches (glow, motion)",
+      baseColors: "Base Colors",
+      hueLabel: "Hue",
+      saturationLabel: "Saturation",
+      modeLabel: "Mode",
+      dark: "Dark",
+      light: "Light",
+      futuristicTouch: "Futuristic Touch",
+      glowIntensity: "Glow Intensity",
+      accentOffset: "Accent Offset",
+      grainLabel: "Grid/Grain",
+      motionLabel: "Animations",
+      uiLabel: "UI",
+      radiusLabel: "Border Radius",
+      contrastLabel: "Contrast",
+      presets: "Presets",
+      export: "Export",
+      randomize: "Randomize",
+      copy: "Copy CSS",
+      download: "Download CSS",
+      share: "Share",
+      hint: "Tip: paste this CSS into your portfolio and use the variables.",
+      about: "About",
+      projects: "Projects",
+      contact: "Contact",
+      heroName: "Your Name",
+      heroDesc: "Frontend Developer • Minimal UI with a sci-fi vibe.",
+      viewProjects: "View Projects",
+      contactBtn: "Contact",
+      footer: "© 2025 Caio Rissa Silveira — All rights reserved",
+    }
+  };
+
+  function setLanguage(lang) {
+    const t = translations[lang];
+    if (!t) return;
+    document.documentElement.lang = lang === "pt" ? "pt-BR" : "en";
+    document.querySelectorAll("[data-i18n]").forEach((el) => {
+      const key = el.getAttribute("data-i18n");
+      if (t[key]) el.textContent = t[key];
+    });
+    localStorage.setItem("lang-themeforge", lang);
+  }
+
+  langToggle.addEventListener("change", (e) => setLanguage(e.target.value));
+  const saved = localStorage.getItem("lang-themeforge") || "pt";
+  langToggle.value = saved;
+  setLanguage(saved);
+})();
+
