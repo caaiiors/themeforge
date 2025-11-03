@@ -370,9 +370,24 @@ body[data-mode="light"] {
   height: 1px; 
   overflow: hidden; }
 
+  #langToggle {
+  background: transparent;
+  border: 1px solid color-mix(in oklab, var(--primary) 25%, var(--surface));
+  border-radius: 10px;
+  padding: 6px 10px;
+  color: var(--text);
+  cursor: pointer;
+}
+#langToggle:hover {
+  background: color-mix(in oklab, var(--primary) 10%, var(--surface));
+}
+
+
 /* Small screens */
 @media (max-width: 960px) {
   .app { grid-template-columns: 1fr; }
   .panel { position: relative; top: 0; }
   .grid { grid-template-columns: 1fr; }
 }
+
+
